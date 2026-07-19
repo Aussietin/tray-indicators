@@ -18,6 +18,22 @@ def run_clockon(*args):
                           creationflags=NO_WINDOW)
 
 
+def known_projects():
+    """Seeded projects (projects.txt next to clockon.py, vault-synced) plus
+    any extras that appear in recent history. File order first."""
+    projects = []
+    seed = CLOCKON.parent / "projects.txt"
+    if seed.exists():
+        for line in seed.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and line not in projects:
+                projects.append(line)
+    for e in recent_entries(50):
+        if e["project"] and e["project"] not in projects:
+            projects.append(e["project"])
+    return projects
+
+
 def recent_entries(limit=8):
     """Distinct recent (project, description, tags) from the last two months,
     newest first. Reads the Drive-synced CSVs directly (read-only)."""

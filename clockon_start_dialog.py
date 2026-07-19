@@ -8,14 +8,11 @@ tkinter never shares a thread with pystray.
 import tkinter as tk
 from tkinter import ttk
 
-from clockon_common import recent_entries, run_clockon
+from clockon_common import known_projects, run_clockon
 
 
 def main():
-    projects = []
-    for e in recent_entries(30):
-        if e["project"] and e["project"] not in projects:
-            projects.append(e["project"])
+    projects = known_projects()
 
     root = tk.Tk()
     root.title("Clock on")
