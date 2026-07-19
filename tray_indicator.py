@@ -140,8 +140,11 @@ class Indicator:
             pystray.Menu.SEPARATOR,
         ]
         for label, cb in self.extra_items:
-            items.append(pystray.MenuItem(
-                label, (lambda c: (lambda i, _: c(i)))(cb)))
+            if isinstance(cb, pystray.Menu):      # (label, Menu) -> submenu
+                items.append(pystray.MenuItem(label, cb))
+            else:
+                items.append(pystray.MenuItem(
+                    label, (lambda c: (lambda i, _: c(i)))(cb)))
         items += [
             pystray.MenuItem("Refresh now", lambda i, _: self._refresh(i)),
             pystray.MenuItem("Quit",        lambda i, _: i.stop()),

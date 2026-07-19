@@ -27,10 +27,11 @@ from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pystray
+from clockon_common import CLOCKON, NO_WINDOW, recent_entries, run_clockon
 from tray_indicator import Indicator, State, GREEN, GREY
 
 STATUS_URL = os.environ.get("CLOCKON_PUBLISH", "http://homelab:8422") + "/state"
-CLOCKON    = Path(r"G:\My Drive\ProjectVault\02_Scripts_and_Tools\clockon\clockon.py")
 CURRENT    = CLOCKON.parent / "data" / "current.json"
 TIME_FMT   = "%Y-%m-%d %H:%M:%S"
 POLL       = 60
@@ -83,18 +84,13 @@ def poll():
                  notify=notify)
 
 
-def _run_clockon(*args):
-    subprocess.run([sys.executable, str(CLOCKON)] + list(args),
-                   capture_output=True, timeout=30, creationflags=NO_WINDOW)
-
-
 def do_stop(icon):
-    _run_clockon("stop")
+    run_clockon("stop")
     ind._refresh(icon)
 
 
 def do_continue(icon):
-    _run_clockon("continue")
+    run_clockon("continue")
     ind._refresh(icon)
 
 
@@ -102,10 +98,38 @@ def do_open(icon):
     webbrowser.open(STATUS_URL.rsplit("/state", 1)[0])
 
 
+def do_new(icon):
+    dialog = Path(__file__).resolve().parent / "clockon_start_dialog.py"
+    subprocess.Popen([sys.executable, str(dialog)], creationflags=NO_WINDOW)
+
+
+def _start_entry(entry):
+    def action(icon, item):
+        args = ["start", entry["description"]]
+        if entry["project"]:
+            args += ["-p", entry["project"]]
+        if entry["tags"]:
+            args += ["-t", entry["tags"]]
+        run_clockon(*args)
+        ind._refresh(icon)
+    return action
+
+
+def _recent_menu():
+    entries = recent_entries()
+    if not entries:
+        yield pystray.MenuItem("(no history yet)", None, enabled=False)
+    for e in entries:
+        label = "{} - {}".format(e["project"] or "(none)", e["description"])[:60]
+        yield pystray.MenuItem(label, _start_entry(e))
+
+
 ind = Indicator("clockon", poll, poll_seconds=POLL,
-                extra_items=[("Open clockon", do_open),
+                extra_items=[("New timer...", do_new),
+                             ("Start recent", pystray.Menu(_recent_menu)),
+                             ("Continue last", do_continue),
                              ("Stop timer", do_stop),
-                             ("Continue last", do_continue)])
+                             ("Open clockon", do_open)])
 
 if __name__ == "__main__":
     ind.run()
