@@ -22,6 +22,7 @@ import os
 import subprocess
 import sys
 import urllib.request
+import webbrowser
 from datetime import datetime
 from pathlib import Path
 
@@ -97,8 +98,13 @@ def do_continue(icon):
     ind._refresh(icon)
 
 
+def do_open(icon):
+    webbrowser.open(STATUS_URL.rsplit("/state", 1)[0])
+
+
 ind = Indicator("clockon", poll, poll_seconds=POLL,
-                extra_items=[("Stop timer", do_stop),
+                extra_items=[("Open clockon", do_open),
+                             ("Stop timer", do_stop),
                              ("Continue last", do_continue)])
 
 if __name__ == "__main__":
