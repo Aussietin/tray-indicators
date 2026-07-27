@@ -31,7 +31,7 @@ import pystray
 from clockon_common import CLOCKON, NO_WINDOW, recent_entries, run_clockon
 from tray_indicator import Indicator, State, GREEN, GREY
 
-STATUS_URL = os.environ.get("CLOCKON_PUBLISH", "http://homelab:8422") + "/state"
+STATUS_URL = os.environ.get("CLOCKON_PUBLISH", "https://homelab.tailfbc9b9.ts.net:8422") + "/state"
 CURRENT    = CLOCKON.parent / "data" / "current.json"
 TIME_FMT   = "%Y-%m-%d %H:%M:%S"
 POLL       = 60

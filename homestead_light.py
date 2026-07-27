@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 homestead_light.py - tray light for the homestead household hub
-(vault: [[homestead]], app: http://homelab:8425).
+(vault: [[homestead]], app: https://homelab.tailfbc9b9.ts.net:8425).
 
   RED   "n"  - n overdue tasks (toast once per count change)
   AMBER "n"  - n due within 30 days
@@ -20,7 +20,7 @@ import webbrowser
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tray_indicator import Indicator, State, GREEN, AMBER, RED
 
-BASE = os.environ.get("HOMESTEAD_URL", "http://homelab:8425")
+BASE = os.environ.get("HOMESTEAD_URL", "https://homelab.tailfbc9b9.ts.net:8425")
 POLL = 300
 
 
