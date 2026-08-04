@@ -95,10 +95,11 @@ def poll():
     color = AMBER if n <= 2 else RED
     sample = ", ".join(dirty[:4])
     frac = max(0.12, n / total)
-    return State(fraction=frac, text=str(n), color=color,
+    label = str(n) if n < 10 else "9+"
+    return State(fraction=frac, text=label, color=color,
                  tooltip="{} of {} repos need attention: {}".format(n, total, sample),
                  menu_label="{} of {} need attention - {}".format(n, total, sample))
 
 
 if __name__ == "__main__":
-    Indicator("dirty_repos", poll, poll_seconds=POLL).run()
+    Indicator("dirty_repos", poll, poll_seconds=POLL, shape="circle").run()

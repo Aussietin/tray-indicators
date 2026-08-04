@@ -3,9 +3,13 @@
 vault_sync.py - tray light for the ProjectVault Google Drive sync.
 
 Honest, machine-local signals only (no reverse-engineering Drive's internals):
-  RED  "OFF"  - GoogleDriveFS.exe is not running -> edits are NOT propagating
-  AMBER "Cn"  - n conflict files present in the vault
-  GREEN "3m"  - syncing; centre shows time since the vault last changed
+  RED   "!"  - GoogleDriveFS.exe is not running -> edits are NOT propagating
+  AMBER "n"  - n conflict files present in the vault
+  GREEN ""   - syncing, nothing wrong; tooltip has time since last change
+
+Square-shaped (vs dirty-repos' circle) so it's identifiable in the tray
+without reading text. Text stays to a single glyph -- anything longer
+doesn't survive Windows scaling this down to ~20px (confirmed 2026-08-04).
 """
 
 import os
@@ -78,7 +82,7 @@ def poll():
                      notify=("Vault sync", "Vault path not found: " + str(VAULT)))
 
     if not gdrive_running():
-        return State(fraction=1.0, text="OFF", color=RED,
+        return State(fraction=1.0, text="!", color=RED,
                      tooltip="Google Drive NOT running - vault is not syncing",
                      menu_label="Drive OFF - vault not syncing",
                      notify=("Vault not syncing",
@@ -88,7 +92,8 @@ def poll():
     if conflicts:
         n = len(conflicts)
         sample = ", ".join(conflicts[:3])
-        return State(fraction=1.0, text="C{}".format(n), color=AMBER,
+        label = str(n) if n < 10 else "9+"
+        return State(fraction=1.0, text=label, color=AMBER,
                      tooltip="{} conflict file(s): {}".format(n, sample),
                      menu_label="{} conflict file(s) - {}".format(n, sample),
                      notify=("Vault conflicts",
@@ -96,10 +101,10 @@ def poll():
 
     age = datetime.now().timestamp() - newest if newest else 0
     a = fmt_age(age)
-    return State(fraction=1.0, text=a, color=GREEN,
+    return State(fraction=1.0, text="", color=GREEN,
                  tooltip="Vault syncing - Drive on - last change {} ago".format(a),
                  menu_label="Syncing - Drive on - last change {} ago".format(a))
 
 
 if __name__ == "__main__":
-    Indicator("vault_sync", poll, poll_seconds=POLL).run()
+    Indicator("vault_sync", poll, poll_seconds=POLL, shape="square").run()

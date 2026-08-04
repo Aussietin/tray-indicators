@@ -8,9 +8,14 @@ waiting on Drive sync). Fallback when the homelab is unreachable: this
 machine's Drive-synced current.json. Honest signals both ways: clockon
 publishes its own state, nothing is reverse-engineered.
 
-  GREEN "1h05" - timer running; centre shows elapsed
-  GREY  "--"   - no timer running
-  RED   "!"    - poll failed entirely (harness renders this)
+  GREEN ""  - timer running; exact elapsed is in the tooltip, not the icon
+              (text longer than one glyph doesn't survive Windows scaling
+              this down to ~20px -- confirmed 2026-08-04)
+  GREY  ""  - no timer running
+  RED   "!" - poll failed entirely (harness renders this)
+
+Hexagon-shaped (vs dirty-repos' circle, vault-sync's square) so it's
+identifiable in the tray without reading text.
 
 Toasts once per hour past 4h ("forgot to stop?").
 Right-click: Stop timer / Continue last (runs clockon itself, which also
@@ -63,7 +68,7 @@ def poll():
     st, src = fetch_state()
     via = "" if src == "homelab" else " (local fallback - homelab unreachable)"
     if not st.get("running"):
-        return State(fraction=1.0, text="--", color=GREY,
+        return State(fraction=1.0, text="", color=GREY,
                      tooltip="clockon: no timer running" + via,
                      menu_label="No timer running")
 
@@ -76,9 +81,9 @@ def poll():
     if hours >= LONG_HOURS:
         notify = ("clockon", "Timer running {}h+ - forgot to stop? "
                              "({} - {})".format(hours, proj, desc))
-    return State(fraction=1.0, text=fmt_elapsed(secs), color=GREEN,
-                 tooltip="clockon: {} - {} (started {}){}".format(
-                     proj, desc, start.strftime("%H:%M"), via),
+    return State(fraction=1.0, text="", color=GREEN,
+                 tooltip="clockon: {} - {} - {} elapsed (started {}){}".format(
+                     proj, desc, fmt_elapsed(secs), start.strftime("%H:%M"), via),
                  menu_label="Running: {} - {} ({})".format(
                      proj, desc, fmt_elapsed(secs)),
                  notify=notify)
@@ -124,7 +129,7 @@ def _recent_menu():
         yield pystray.MenuItem(label, _start_entry(e))
 
 
-ind = Indicator("clockon", poll, poll_seconds=POLL,
+ind = Indicator("clockon", poll, poll_seconds=POLL, shape="hexagon",
                 extra_items=[("New timer...", do_new),
                              ("Start recent", pystray.Menu(_recent_menu)),
                              ("Continue last", do_continue),

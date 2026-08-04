@@ -48,21 +48,69 @@ class State:
     notify: tuple = None           # (title, message) - fired once until it changes
 
 
-def _build_icon(state, font_path):
+def _rounded_square(d, a, b, fill):
+    d.rounded_rectangle([a, a, b, b], radius=(b - a) * 0.28, fill=fill)
+
+
+def _diamond(d, a, b, fill):
+    cx = cy = (a + b) / 2
+    d.polygon([(cx, a), (b, cy), (cx, b), (a, cy)], fill=fill)
+
+
+def _hexagon(d, a, b, fill):
+    import math
+    cx = cy = (a + b) / 2
+    r = (b - a) / 2
+    pts = [(cx + r * math.cos(math.radians(60 * i - 30)),
+            cy + r * math.sin(math.radians(60 * i - 30))) for i in range(6)]
+    d.polygon(pts, fill=fill)
+
+
+def _house(d, a, b, fill):
+    cx = (a + b) / 2
+    body_top = a + (b - a) * 0.42
+    d.polygon([(cx, a), (b, body_top), (b, b), (a, b), (a, body_top)], fill=fill)
+
+
+def _card(d, a, b, fill):
+    d.rounded_rectangle([a, a + (b - a) * 0.12, b, b - (b - a) * 0.12],
+                        radius=(b - a) * 0.16, fill=fill)
+
+
+# One fixed silhouette per app, so it's recognisable in the tray without
+# reading text (see vault: 2026-08-04 tray icon redesign) -- shape carries
+# identity, colour carries status, and text should stay to a single glyph
+# since anything longer doesn't survive Windows scaling this down to ~20px.
+SHAPES = {
+    "circle": None,           # special-cased below (keeps pieslice fractions)
+    "square": _rounded_square,
+    "diamond": _diamond,
+    "hexagon": _hexagon,
+    "house": _house,
+    "card": _card,
+}
+
+
+def _build_icon(state, font_path, shape="circle"):
     sz, pad, hole = 128, 4, 24
     img = Image.new("RGBA", (sz, sz), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-
-    # ring track
-    d.ellipse([pad, pad, sz - pad, sz - pad], fill=(70, 70, 70, 255))
-
     frac = max(0.0, min(state.fraction, 1.0))
-    if frac > 0.005:
-        d.pieslice([pad, pad, sz - pad, sz - pad],
-                   start=-90, end=-90 + frac * 360, fill=state.color)
 
-    # hole
-    d.ellipse([hole, hole, sz - hole, sz - hole], fill=(24, 24, 24, 255))
+    if shape == "circle":
+        # keeps fractional fill (pieslice) -- the one light that uses a
+        # real, non-binary fraction (dirty-repos' proportion dirty) needs it.
+        d.ellipse([pad, pad, sz - pad, sz - pad], fill=(70, 70, 70, 255))
+        if frac > 0.005:
+            d.pieslice([pad, pad, sz - pad, sz - pad],
+                       start=-90, end=-90 + frac * 360, fill=state.color)
+        d.ellipse([hole, hole, sz - hole, sz - hole], fill=(24, 24, 24, 255))
+    else:
+        draw_shape = SHAPES.get(shape, _rounded_square)
+        draw_shape(d, pad, sz - pad, (70, 70, 70, 255))
+        if frac > 0.005:
+            draw_shape(d, pad, sz - pad, state.color)
+        draw_shape(d, hole, sz - hole, (24, 24, 24, 255))
 
     label = state.text or ""
     if label:
@@ -81,11 +129,14 @@ def _build_icon(state, font_path):
 
 class Indicator:
     def __init__(self, name, poll, *, poll_seconds=60, font_path=FONT_PATH,
-                 extra_items=()):
+                 shape="circle", extra_items=()):
         """
         name         - stable id used by pystray.
         poll         - callable returning a State. Exceptions are caught and
                        rendered as a red "!" so a flaky poll never kills the icon.
+        shape        - one of SHAPES (circle/square/diamond/hexagon/house/card),
+                       fixed per app so it's recognisable in the tray without
+                       reading text -- see SHAPES above.
         extra_items  - iterable of (label, callback) where callback takes the
                        pystray icon, inserted above Refresh/Quit.
         """
@@ -93,6 +144,7 @@ class Indicator:
         self.poll = poll
         self.poll_seconds = poll_seconds
         self.font_path = font_path
+        self.shape = shape
         self.extra_items = tuple(extra_items)
         self._state = State(text="...", color=GREY,
                             tooltip=name + " - loading...", menu_label="Loading...")
@@ -111,7 +163,7 @@ class Indicator:
 
     def _apply(self, icon, state):
         self._state = state
-        icon.icon = _build_icon(state, self.font_path)
+        icon.icon = _build_icon(state, self.font_path, self.shape)
         icon.title = state.tooltip or self.name
         icon.update_menu()
         if state.notify and state.notify != self._last_notify:
@@ -131,7 +183,7 @@ class Indicator:
 
     def run(self):
         self._state = self._safe_poll()
-        icon = pystray.Icon(self.name, _build_icon(self._state, self.font_path),
+        icon = pystray.Icon(self.name, _build_icon(self._state, self.font_path, self.shape),
                             self._state.tooltip or self.name)
 
         items = [
