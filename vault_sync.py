@@ -42,7 +42,12 @@ def scan_vault():
     for root, dirs, files in os.walk(VAULT):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.startswith(".")]
         for fn in files:
-            if "conflict" in fn.lower():
+            # Google Drive for desktop names real sync conflicts
+            # "name (someone's conflicting copy 2026-01-01).md" -- match that
+            # phrase, not the bare word "conflict", which false-positives on
+            # any note whose own subject happens to be conflicts (e.g.
+            # "Homelab Docker DNS and Tailscale Port Conflicts.md").
+            if "conflicting copy" in fn.lower():
                 conflicts.append(fn)
             try:
                 m = os.path.getmtime(os.path.join(root, fn))
