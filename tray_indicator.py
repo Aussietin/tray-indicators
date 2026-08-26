@@ -92,7 +92,7 @@ SHAPES = {
 
 
 def _build_icon(state, font_path, shape="circle"):
-    sz, pad, hole = 128, 4, 24
+    sz, pad, hole = 128, 2, 12
     img = Image.new("RGBA", (sz, sz), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     frac = max(0.0, min(state.fraction, 1.0))
