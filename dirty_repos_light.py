@@ -62,6 +62,11 @@ def repo_needs_attention(repo):
             capture_output=True, text=True, timeout=8, creationflags=NO_WINDOW)
         if ahead.returncode == 0 and ahead.stdout.strip() not in ("", "0"):
             return True
+        behind = subprocess.run(
+            ["git", "-C", str(repo), "rev-list", "--count", "HEAD..@{u}"],
+            capture_output=True, text=True, timeout=8, creationflags=NO_WINDOW)
+        if behind.returncode == 0 and behind.stdout.strip() not in ("", "0"):
+            return True
         return False
     except Exception:
         return False
