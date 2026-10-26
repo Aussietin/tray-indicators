@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-clockon_light.py - tray light for the clockon time tracker (vault: [[clockon]]).
+clockon_light.py - tray light for the clockon time tracker.
 
 Primary source: the clockon-status mirror on the homelab (clockon POSTs its
 own state there on every start/stop, so it's fresh across machines - no
