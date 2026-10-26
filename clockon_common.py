@@ -2,6 +2,7 @@
 """Shared clockon paths/helpers for the tray light and the start dialog."""
 
 import csv
+import os
 import subprocess
 import sys
 from pathlib import Path
