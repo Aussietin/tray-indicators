@@ -18,7 +18,7 @@ Indicator("my_thing", poll, poll_seconds=30).run()
 ## Why
 
 Small background facts — is my vault syncing, do I have uncommitted repos,
-is the work timer running — each want a glanceable indicator, not a
+is a timer running — each want a glanceable indicator, not a
 notification and not an app window. Rather than build a bespoke tray app
 per fact, this is the shared harness they all run on.
 
@@ -44,7 +44,7 @@ as a red `!` rather than crashing the tray.
 | `vault_sync.py` | Google Drive vault sync — process alive, conflict files, time since last change | square |
 | `dirty_repos_light.py` | git repos under a configured dir with uncommitted / unpushed work | circle |
 | `homestead_light.py` | the self-hosted household-ops service — overdue / soon-due tasks, reachability | house |
-| `clockon_light.py` | whether a `clockon` time-tracking timer is currently running | — |
+| `clockon_light.py` | whether a command-line timer is currently running | — |
 
 These are the author's own lights and carry hardcoded local paths (e.g.
 `dirty_repos_light.py`'s `SCAN_DIRS`, `start-trays.vbs`'s base and Python
