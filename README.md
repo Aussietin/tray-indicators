@@ -45,6 +45,7 @@ as a red `!` rather than crashing the tray.
 | `dirty_repos_light.py` | git repos under a configured dir with uncommitted / unpushed work | circle |
 | `homestead_light.py` | the self-hosted household-ops service: overdue / soon-due tasks, reachability | house |
 | `machine_health_light.py` | kernel paged pool + access-token count (leak watch), commit charge, C: free; logs a sample each poll | diamond |
+| `usage_light.py` | Claude Max weekly usage pace: tokens from local transcripts vs elapsed week (amber if projected to cap before the Tuesday reset) | card |
 | `clockon_light.py` | whether a `clockon` time-tracking timer is running. Retired from startup 2026-11-05 (unused since July) | hexagon |
 
 `vault_sync.py` (Google Drive vault sync) was removed 2026-11-05: the vault moved to git, and it was watching a

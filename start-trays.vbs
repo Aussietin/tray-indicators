@@ -6,3 +6,4 @@ sh.Run """" & pyw & """ """ & base & "vault_git_light.py""", 0, False
 sh.Run """" & pyw & """ """ & base & "dirty_repos_light.py""", 0, False
 sh.Run """" & pyw & """ """ & base & "homestead_light.py""", 0, False
 sh.Run """" & pyw & """ """ & base & "machine_health_light.py""", 0, False
+sh.Run """" & pyw & """ """ & base & "usage_light.py""", 0, False
