@@ -41,10 +41,14 @@ as a red `!` rather than crashing the tray.
 
 | Light | Watches | Shape |
 |---|---|---|
-| `vault_sync.py` | Google Drive vault sync — process alive, conflict files, time since last change | square |
+| `vault_git_light.py` | the vault's main git checkout: stuck rebase/merge, detached HEAD, behind origin, uncommitted or unpushed work | square |
 | `dirty_repos_light.py` | git repos under a configured dir with uncommitted / unpushed work | circle |
-| `homestead_light.py` | the self-hosted household-ops service — overdue / soon-due tasks, reachability | house |
-| `clockon_light.py` | whether a `clockon` time-tracking timer is currently running | — |
+| `homestead_light.py` | the self-hosted household-ops service: overdue / soon-due tasks, reachability | house |
+| `machine_health_light.py` | kernel paged pool + access-token count (leak watch), commit charge, C: free; logs a sample each poll | diamond |
+| `clockon_light.py` | whether a `clockon` time-tracking timer is running. Retired from startup 2026-11-05 (unused since July) | hexagon |
+
+`vault_sync.py` (Google Drive vault sync) was removed 2026-11-05: the vault moved to git, and it was watching a
+stale Drive copy.
 
 These are the author's own lights and carry hardcoded local paths (e.g.
 `dirty_repos_light.py`'s `SCAN_DIRS`, `start-trays.vbs`'s base and Python
@@ -58,7 +62,7 @@ pip install -r requirements.txt
 pythonw tray_indicator.py               # a single light
 ```
 
-`start-trays.vbs` launches all four configured lights silently via
+`start-trays.vbs` launches the configured lights silently via
 `pythonw` (no console windows) — edit its `base` / `pyw` paths, then
 double-click it or drop a shortcut in `shell:startup` to run on login.
 
