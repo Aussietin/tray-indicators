@@ -11,6 +11,7 @@ Centre = number of dirty repos; tooltip lists them. Windows Dev tree only
 
 import os
 import sys
+import time
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -20,8 +21,12 @@ from tray_indicator import Indicator, State, GREEN, AMBER, RED, GREY
 
 SCAN_DIRS = [Path(r"C:\Users\AustinCrozier\Dev")]
 MAX_DEPTH = 3
-POLL      = 20
+POLL      = 60
+RESCAN    = 600          # rediscover repos every 10 min, not every poll
+SKIP_DIRS = {"node_modules"}
 NO_WINDOW = 0x08000000
+
+_repo_cache = {"t": 0.0, "repos": []}
 
 
 def find_repos(base, max_depth=MAX_DEPTH):
@@ -38,7 +43,10 @@ def find_repos(base, max_depth=MAX_DEPTH):
             return
         try:
             for child in d.iterdir():
-                if child.is_dir() and not child.name.startswith("."):
+                # "_" dirs (_worktrees, _scratch*, _art...) hold agent worktrees and caches:
+                # walking them every poll cost ~18 s of disk walk and ~100 git calls
+                if (child.is_dir() and child.name[0] not in "._"
+                        and child.name not in SKIP_DIRS):
                     walk(child, depth + 1)
         except OSError:
             return
@@ -49,33 +57,36 @@ def find_repos(base, max_depth=MAX_DEPTH):
 
 def repo_needs_attention(repo):
     """True if the repo has uncommitted changes or local commits not pushed."""
+    # One call instead of status + two rev-lists: v2 --branch prints "# branch.ab +ahead -behind"
+    # when there is an upstream, and any non-"#" line is a changed or untracked file.
     try:
         st = subprocess.run(
-            ["git", "-C", str(repo), "status", "--porcelain"],
+            ["git", "-C", str(repo), "status", "--porcelain=v2", "--branch"],
             capture_output=True, text=True, timeout=8, creationflags=NO_WINDOW)
         if st.returncode != 0:
             return False
-        if st.stdout.strip():
-            return True
-        ahead = subprocess.run(
-            ["git", "-C", str(repo), "rev-list", "--count", "@{u}..HEAD"],
-            capture_output=True, text=True, timeout=8, creationflags=NO_WINDOW)
-        if ahead.returncode == 0 and ahead.stdout.strip() not in ("", "0"):
-            return True
-        behind = subprocess.run(
-            ["git", "-C", str(repo), "rev-list", "--count", "HEAD..@{u}"],
-            capture_output=True, text=True, timeout=8, creationflags=NO_WINDOW)
-        if behind.returncode == 0 and behind.stdout.strip() not in ("", "0"):
-            return True
+        for line in st.stdout.splitlines():
+            if not line.startswith("#"):
+                return True
+            if line.startswith("# branch.ab ") and line.split()[2:4] != ["+0", "-0"]:
+                return True
         return False
     except Exception:
         return False
 
 
+def cached_repos():
+    now = time.monotonic()
+    if not _repo_cache["repos"] or now - _repo_cache["t"] > RESCAN:
+        repos = []
+        for base in SCAN_DIRS:
+            repos.extend(find_repos(base))
+        _repo_cache.update(t=now, repos=repos)
+    return _repo_cache["repos"]
+
+
 def poll():
-    repos = []
-    for base in SCAN_DIRS:
-        repos.extend(find_repos(base))
+    repos = cached_repos()
     total = len(repos)
 
     if total == 0:
@@ -86,7 +97,7 @@ def poll():
     # Sequential git subprocess calls across ~20 repos took ~3s (measured);
     # a thread pool cuts that to under 1s since each call is mostly waiting
     # on the git process, not CPU-bound in this thread — lets POLL drop from
-    # 120s to 20s without meaningfully increasing background load.
+    # 120s to 60s without meaningfully increasing background load.
     with ThreadPoolExecutor(max_workers=8) as ex:
         flags = list(ex.map(repo_needs_attention, repos))
     dirty = [r.name for r, needs in zip(repos, flags) if needs]
